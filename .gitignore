@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
+# FAISS index (rebuilt on startup)
+task2_rag/backend/index/*.faiss
+task2_rag/backend/index/*.pkl
+task2_rag/backend/index/*.json
+!task2_rag/backend/index/.gitkeep
+
+# Node
+node_modules/
+task2_rag/frontend/dist/
+.npm
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Misc
+*.log
+*.tmp
