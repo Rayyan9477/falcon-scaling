@@ -74,7 +74,8 @@ class QueryEngine:
         if esg:
             mask &= self.df["ESG/Impact Level"].str.contains(esg, case=False, na=False)
 
-        return list(self.df[mask].index)
+        # Use np.where to get positional integers matching FAISS IDs (not pandas label index)
+        return list(np.where(mask.values)[0])
 
     def _semantic_search(self, query: str, candidate_ids: list[int] | None = None, top_k: int = 10) -> list[tuple[int, float]]:
         """Run FAISS similarity search. Optionally restrict to candidate_ids."""
@@ -85,12 +86,13 @@ class QueryEngine:
             return []
 
         if candidate_ids is not None:
-            # Search full index then filter to candidates
-            k = min(len(self.documents), top_k * 5)
+            # Search all vectors, then filter to candidates (200 records — trivial cost)
+            candidate_set = set(candidate_ids)
+            k = len(self.documents)
             scores, indices = self.index.search(query_embedding, k)
             results = []
             for score, idx in zip(scores[0], indices[0]):
-                if idx in candidate_ids:
+                if idx in candidate_set:
                     results.append((int(idx), float(score)))
                 if len(results) >= top_k:
                     break
@@ -154,6 +156,7 @@ class QueryEngine:
             ]
         )
 
+        candidate_ids = []
         if has_structured_filters:
             # Apply structured filters first
             candidate_ids = self._apply_structured_filters(extracted)
@@ -198,8 +201,8 @@ class QueryEngine:
             "countries": sorted(self.df["HQ Country"].dropna().unique().tolist()),
             "sectors": self._extract_unique_sectors(),
             "aum_range": {
-                "min": float(pd.to_numeric(self.df["AUM ($B)"], errors="coerce").min()),
-                "max": float(pd.to_numeric(self.df["AUM ($B)"], errors="coerce").max()),
+                "min": float(pd.to_numeric(self.df["AUM ($B)"], errors="coerce").fillna(0).min()),
+                "max": float(pd.to_numeric(self.df["AUM ($B)"], errors="coerce").fillna(0).max()),
             },
             "co_invest_frequencies": sorted(self.df["Co-Invest Frequency"].dropna().unique().tolist()),
             "esg_levels": sorted(self.df["ESG/Impact Level"].dropna().unique().tolist()),
@@ -218,16 +221,17 @@ class QueryEngine:
     def get_stats(self) -> dict:
         """Return dataset statistics."""
         df = self.df
+        aum = pd.to_numeric(df["AUM ($B)"], errors="coerce").fillna(0)
         return {
             "total_records": len(df),
             "total_fields": len(df.columns),
             "type_breakdown": df["Type (SFO/MFO)"].value_counts().to_dict(),
             "region_breakdown": df["Region"].value_counts().to_dict(),
             "aum_stats": {
-                "min": float(pd.to_numeric(df["AUM ($B)"], errors="coerce").min()),
-                "max": float(pd.to_numeric(df["AUM ($B)"], errors="coerce").max()),
-                "avg": round(float(pd.to_numeric(df["AUM ($B)"], errors="coerce").mean()), 1),
-                "median": round(float(pd.to_numeric(df["AUM ($B)"], errors="coerce").median()), 1),
+                "min": round(float(aum.min()), 1),
+                "max": round(float(aum.max()), 1),
+                "avg": round(float(aum.mean()), 1),
+                "median": round(float(aum.median()), 1),
             },
             "confidence_breakdown": df["Data Confidence"].value_counts().to_dict(),
         }

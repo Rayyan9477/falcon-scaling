@@ -2,12 +2,17 @@ import { useQuery } from '@tanstack/react-query';
 import { getStats } from '../services/api';
 
 export default function DatasetStats() {
-  const { data: stats } = useQuery({
+  const { data: stats, isError } = useQuery({
     queryKey: ['stats'],
     queryFn: getStats,
     staleTime: Infinity,
   });
 
+  if (isError) return (
+    <div className="bg-red-50 border-t border-red-200 px-6 py-3 text-xs text-red-500">
+      Unable to load dataset stats.
+    </div>
+  );
   if (!stats) return null;
 
   return (

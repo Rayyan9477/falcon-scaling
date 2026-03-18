@@ -10,16 +10,22 @@ interface Props {
 }
 
 export default function FilterSidebar({ filters, onFilterChange, onReset, hasActiveFilters }: Props) {
-  const { data: options } = useQuery({
+  const { data: options, isLoading, isError } = useQuery({
     queryKey: ['filters'],
     queryFn: getFilters,
     staleTime: Infinity,
   });
 
-  if (!options) return <div className="p-4 text-sm text-gray-400">Loading filters...</div>;
+  if (isLoading) return <div className="p-4 text-sm text-gray-400">Loading filters...</div>;
+  if (isError) return (
+    <div className="p-4 text-sm text-red-500">
+      Failed to load filters. Is the backend running at localhost:8000?
+    </div>
+  );
+  if (!options) return null;
 
   return (
-    <div className="p-4 space-y-5">
+    <div className="p-4 space-y-5 overflow-y-auto">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700">Filters</h3>
         {hasActiveFilters && (
@@ -48,7 +54,7 @@ export default function FilterSidebar({ filters, onFilterChange, onReset, hasAct
       {/* Type */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {options.types.map(t => (
             <label key={t} className="flex items-center gap-1 text-xs">
               <input
@@ -87,6 +93,19 @@ export default function FilterSidebar({ filters, onFilterChange, onReset, hasAct
         />
       </div>
 
+      {/* Sectors */}
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Sectors</label>
+        <select
+          multiple
+          value={filters.sectors || []}
+          onChange={(e) => onFilterChange('sectors', Array.from(e.target.selectedOptions, o => o.value))}
+          className="w-full text-xs border border-gray-300 rounded p-1.5 h-24"
+        >
+          {options.sectors.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
       {/* Check Size Min */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">Check Size Min ($M)</label>
@@ -97,6 +116,20 @@ export default function FilterSidebar({ filters, onFilterChange, onReset, hasAct
           onChange={(e) => onFilterChange('check_size_min', e.target.value ? Number(e.target.value) : undefined)}
           className="w-full text-xs border border-gray-300 rounded p-1.5"
         />
+      </div>
+
+      {/* Direct Investment */}
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Direct Investment</label>
+        <select
+          value={filters.direct_investment || ''}
+          onChange={(e) => onFilterChange('direct_investment', e.target.value || undefined)}
+          className="w-full text-xs border border-gray-300 rounded p-1.5"
+        >
+          <option value="">All</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
       </div>
 
       {/* Co-Invest Frequency */}

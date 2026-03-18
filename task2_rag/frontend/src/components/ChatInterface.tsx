@@ -54,17 +54,9 @@ export default function ChatInterface({ filters }: Props) {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
 
-    // Clean filters: remove empty values
-    const cleanFilters: FilterParams = {};
-    for (const [k, v] of Object.entries(filters)) {
-      if (v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0)) {
-        (cleanFilters as Record<string, unknown>)[k] = v;
-      }
-    }
-
     mutation.mutate({
       query: query.trim(),
-      filters: Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined,
+      filters: Object.keys(filters).length > 0 ? filters : undefined,
     });
   };
 
@@ -121,7 +113,7 @@ export default function ChatInterface({ filters }: Props) {
           <div className="flex justify-start">
             <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3">
               <div className="flex items-center gap-2 text-sm text-gray-500">
-                <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                <div className="animate-spin h-4 w-4 border-2 border-blue-500 [border-top-color:transparent] rounded-full" />
                 Analyzing query and retrieving results...
               </div>
             </div>

@@ -72,30 +72,36 @@ def row_to_document(row: pd.Series) -> str:
 def row_to_metadata(row: pd.Series) -> dict:
     """Extract structured metadata from a row for filtering."""
 
+    def safe_str(val, default=""):
+        if pd.isna(val) or val is None:
+            return default
+        return str(val).strip()
+
     def safe_float(val, default=0.0):
         try:
-            return float(val)
+            f = float(val)
+            return default if pd.isna(f) else f
         except (ValueError, TypeError):
             return default
 
     return {
-        "fo_name": str(row.get("Family Office Name", "")),
-        "type": str(row.get("Type (SFO/MFO)", "")),
-        "founding_family": str(row.get("Founding Family", "")),
-        "hq_city": str(row.get("HQ City", "")),
-        "hq_country": str(row.get("HQ Country", "")),
-        "region": str(row.get("Region", "")),
+        "fo_name": safe_str(row.get("Family Office Name")),
+        "type": safe_str(row.get("Type (SFO/MFO)")),
+        "founding_family": safe_str(row.get("Founding Family")),
+        "hq_city": safe_str(row.get("HQ City")),
+        "hq_country": safe_str(row.get("HQ Country")),
+        "region": safe_str(row.get("Region")),
         "aum_b": safe_float(row.get("AUM ($B)")),
         "check_min_m": safe_float(row.get("Check Size Min ($M)")),
         "check_max_m": safe_float(row.get("Check Size Max ($M)")),
-        "sector_focus": str(row.get("Sector Focus", "")),
-        "investment_strategy": str(row.get("Investment Strategy", "")),
-        "direct_investment": str(row.get("Direct Investment", "")),
-        "co_invest_frequency": str(row.get("Co-Invest Frequency", "")),
-        "esg_level": str(row.get("ESG/Impact Level", "")),
-        "data_confidence": str(row.get("Data Confidence", "")),
-        "primary_dm": str(row.get("Primary Decision Maker", "")),
-        "primary_dm_title": str(row.get("Primary DM Title", "")),
+        "sector_focus": safe_str(row.get("Sector Focus")),
+        "investment_strategy": safe_str(row.get("Investment Strategy")),
+        "direct_investment": safe_str(row.get("Direct Investment")),
+        "co_invest_frequency": safe_str(row.get("Co-Invest Frequency")),
+        "esg_level": safe_str(row.get("ESG/Impact Level")),
+        "data_confidence": safe_str(row.get("Data Confidence")),
+        "primary_dm": safe_str(row.get("Primary Decision Maker")),
+        "primary_dm_title": safe_str(row.get("Primary DM Title")),
     }
 
 

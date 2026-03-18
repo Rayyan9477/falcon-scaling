@@ -1,3 +1,7 @@
+# Prerequisites:
+# 1. Copy backend/.env.example to backend/.env and add your LLM API key
+# 2. Ensure ../data/family_office_dataset.xlsx exists
+
 services:
   backend:
     build:

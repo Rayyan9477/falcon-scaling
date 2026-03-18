@@ -29,16 +29,21 @@ async def lifespan(app: FastAPI):
     if cached:
         logger.info("Loaded existing FAISS index from disk.")
         index, documents, metadata = cached
-        df = load_dataset(settings.dataset_path)
+        df = load_dataset(settings.dataset_path).reset_index(drop=True)
     else:
         logger.info("Building FAISS index from dataset: %s", settings.dataset_path)
         index, documents, metadata, df = build_index(
             settings.dataset_path, settings.index_dir, embedding_model
         )
+        df = df.reset_index(drop=True)
         logger.info("FAISS index built and saved. %d documents indexed.", len(documents))
 
     # Initialize LLM client
-    llm_client = LLMClient(model=settings.llm_model, api_key=settings.llm_api_key)
+    llm_client = LLMClient(
+        model=settings.llm_model,
+        api_key=settings.llm_api_key,
+        api_base=settings.llm_api_base or None,
+    )
 
     # Create query engine and register globally
     engine = QueryEngine(
