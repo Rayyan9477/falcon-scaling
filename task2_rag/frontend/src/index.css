@@ -1,13 +1,86 @@
 @import "tailwindcss";
 
-body {
+/* Disable Tailwind v4 auto dark mode */
+@custom-variant dark (&:is(.force-dark *));
+
+html, body {
+  color-scheme: light;
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f9fafb;
+  background: #f5f6f8;
+  color: #1e293b;
 }
 
-#root {
-  min-height: 100vh;
-}
+#root { min-height: 100vh; }
+
+/* ── layout shells ──────────────────────────────── */
+.shell        { background: #f5f6f8; }
+.surface      { background: #ffffff; border-color: #e2e8f0; }
+.surface-alt  { background: #f5f6f8; }
+.footer-bar   { background: #ffffff; border-color: #f1f5f9; }
+
+/* ── header ─────────────────────────────────────── */
+.brand-icon   { background: #1e40af; color: #ffffff; }
+.brand-title  { color: #0f172a; }
+.brand-sub    { color: #94a3b8; }
+.status-badge { color: #059669; background: #ecfdf5; border-color: #a7f3d0; }
+
+/* ── filter sidebar ─────────────────────────────── */
+.filter-label { color: #64748b; }
+.filter-chip  { background: #ffffff; color: #475569; border-color: #e2e8f0; }
+.filter-chip:hover { border-color: #94a3b8; }
+.filter-chip-on { background: #1e40af; color: #ffffff; border-color: #1e40af; }
+.filter-input { background: #ffffff; color: #1e293b; border-color: #e2e8f0; }
+.filter-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 2px #dbeafe; }
+.filter-hint  { color: #94a3b8; }
+.filter-reset { color: #2563eb; }
+.filter-reset:hover { text-decoration: underline; }
+.filter-heading { color: #334155; }
+
+/* ── chat ───────────────────────────────────────── */
+.msg-user     { background: #1e40af; color: #ffffff; }
+.msg-bot      { background: #ffffff; color: #334155; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.msg-meta     { color: #94a3b8; }
+.input-box    { background: #ffffff; color: #1e293b; border-color: #e2e8f0; }
+.input-box::placeholder { color: #cbd5e1; }
+.input-box:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 2px #dbeafe; }
+.btn-send     { background: #1e40af; color: #ffffff; }
+.btn-send:hover { background: #1e3a8a; }
+.btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── example query pills ────────────────────────── */
+.pill         { background: #ffffff; color: #64748b; border: 1px solid #e2e8f0; }
+.pill:hover   { color: #1e40af; border-color: #93c5fd; background: #eff6ff; }
+.pill:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── result cards ───────────────────────────────── */
+.result-card  { background: #fafbfc; border: 1px solid #f1f5f9; }
+.result-card:hover { background: #ffffff; border-color: #cbd5e1; }
+.result-name  { color: #0f172a; }
+.result-meta  { color: #94a3b8; }
+.result-detail-label { color: #334155; }
+.result-detail-val   { color: #64748b; }
+.badge-sfo    { background: #eef2ff; color: #4338ca; }
+.badge-mfo    { background: #fef3c7; color: #b45309; }
+.score-high   { color: #059669; }
+.score-mid    { color: #d97706; }
+.score-low    { color: #94a3b8; }
+
+/* ── empty / loading / error states ─────────────── */
+.empty-title  { color: #334155; }
+.empty-sub    { color: #94a3b8; }
+.loading-dot  { background: #3b82f6; }
+.loading-text { color: #94a3b8; }
+.error-text   { color: #dc2626; }
+.stat-text    { color: #94a3b8; }
+
+/* ── scrollbar ──────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── range input ────────────────────────────────── */
+input[type="range"] { accent-color: #1e40af; }

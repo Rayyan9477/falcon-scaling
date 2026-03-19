@@ -9,6 +9,10 @@ interface Props {
   hasActiveFilters: boolean;
 }
 
+function Label({ children }: { children: React.ReactNode }) {
+  return <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5 filter-label">{children}</label>;
+}
+
 export default function FilterSidebar({ filters, onFilterChange, onReset, hasActiveFilters }: Props) {
   const { data: options, isLoading, isError } = useQuery({
     queryKey: ['filters'],
@@ -16,69 +20,68 @@ export default function FilterSidebar({ filters, onFilterChange, onReset, hasAct
     staleTime: Infinity,
   });
 
-  if (isLoading) return <div className="p-4 text-sm text-gray-400">Loading filters...</div>;
-  if (isError) return (
-    <div className="p-4 text-sm text-red-500">
-      Failed to load filters. Is the backend running at localhost:8000?
-    </div>
-  );
+  if (isLoading) return <div className="p-5 text-xs loading-text">Loading filters...</div>;
+  if (isError) return <div className="p-5 text-xs error-text">Could not load filters.</div>;
   if (!options) return null;
 
   return (
-    <div className="p-4 space-y-5 overflow-y-auto">
+    <div className="p-4 space-y-4 text-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">Filters</h3>
+        <span className="text-[11px] font-semibold uppercase tracking-wider filter-heading">Filters</span>
         {hasActiveFilters && (
-          <button
-            onClick={onReset}
-            className="text-xs text-blue-600 hover:text-blue-800"
-          >
-            Reset
-          </button>
+          <button type="button" onClick={onReset} className="text-[11px] filter-reset">Clear all</button>
         )}
       </div>
 
-      {/* Region */}
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Region</label>
-        <select
-          multiple
-          value={filters.regions || []}
-          onChange={(e) => onFilterChange('regions', Array.from(e.target.selectedOptions, o => o.value))}
-          className="w-full text-xs border border-gray-300 rounded p-1.5 h-24"
-        >
-          {options.regions.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
-      </div>
+      <hr className="border-0 h-px bg-slate-100" />
 
-      {/* Type */}
+      {/* Region chips */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
-        <div className="flex flex-wrap gap-2">
-          {options.types.map(t => (
-            <label key={t} className="flex items-center gap-1 text-xs">
-              <input
-                type="checkbox"
-                checked={filters.types?.includes(t) || false}
-                onChange={(e) => {
-                  const current = filters.types || [];
-                  onFilterChange('types', e.target.checked
-                    ? [...current, t]
-                    : current.filter(x => x !== t)
-                  );
-                }}
-              />
-              {t}
-            </label>
+        <Label>Region</Label>
+        <div className="flex flex-wrap gap-1">
+          {options.regions.map(r => (
+            <button
+              type="button"
+              key={r}
+              onClick={() => {
+                const cur = filters.regions || [];
+                onFilterChange('regions', cur.includes(r) ? cur.filter(x => x !== r) : [...cur, r]);
+              }}
+              className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${
+                filters.regions?.includes(r) ? 'filter-chip-on' : 'filter-chip'
+              }`}
+            >
+              {r}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* AUM Range */}
+      {/* Type chips */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          AUM Min ($B): {filters.aum_min ?? options.aum_range.min}
-        </label>
+        <Label>Type</Label>
+        <div className="flex gap-1">
+          {options.types.map(t => (
+            <button
+              type="button"
+              key={t}
+              onClick={() => {
+                const cur = filters.types || [];
+                onFilterChange('types', cur.includes(t) ? cur.filter(x => x !== t) : [...cur, t]);
+              }}
+              className={`text-[11px] px-3 py-1 rounded border transition-colors ${
+                filters.types?.includes(t) ? 'filter-chip-on' : 'filter-chip'
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* AUM slider */}
+      <div>
+        <Label>AUM Min (${filters.aum_min ?? options.aum_range.min}B)</Label>
         <input
           type="range"
           min={options.aum_range.min}
@@ -89,74 +92,61 @@ export default function FilterSidebar({ filters, onFilterChange, onReset, hasAct
             const val = Number(e.target.value);
             onFilterChange('aum_min', val > options.aum_range.min ? val : undefined);
           }}
-          className="w-full"
+          title="AUM minimum filter"
+          className="w-full h-1"
         />
+        <div className="flex justify-between text-[10px] mt-0.5 filter-hint">
+          <span>${options.aum_range.min}B</span>
+          <span>${options.aum_range.max}B</span>
+        </div>
       </div>
 
       {/* Sectors */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Sectors</label>
+        <Label>Sectors</Label>
         <select
           multiple
+          title="Select sectors"
           value={filters.sectors || []}
           onChange={(e) => onFilterChange('sectors', Array.from(e.target.selectedOptions, o => o.value))}
-          className="w-full text-xs border border-gray-300 rounded p-1.5 h-24"
+          className="w-full text-[11px] rounded-md p-1.5 h-20 filter-input"
         >
           {options.sectors.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
+        <p className="text-[10px] mt-0.5 filter-hint">Ctrl+click to multi-select</p>
       </div>
 
-      {/* Check Size Min */}
+      {/* Check Size */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Check Size Min ($M)</label>
+        <Label>Check Size Min ($M)</Label>
         <input
           type="number"
           placeholder="e.g. 10"
           value={filters.check_size_min ?? ''}
           onChange={(e) => onFilterChange('check_size_min', e.target.value ? Number(e.target.value) : undefined)}
-          className="w-full text-xs border border-gray-300 rounded p-1.5"
+          className="w-full text-xs rounded-md px-2.5 py-1.5 filter-input"
         />
       </div>
 
-      {/* Direct Investment */}
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Direct Investment</label>
-        <select
-          value={filters.direct_investment || ''}
-          onChange={(e) => onFilterChange('direct_investment', e.target.value || undefined)}
-          className="w-full text-xs border border-gray-300 rounded p-1.5"
-        >
-          <option value="">All</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-      </div>
-
-      {/* Co-Invest Frequency */}
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Co-Invest Frequency</label>
-        <select
-          value={filters.co_invest_frequency || ''}
-          onChange={(e) => onFilterChange('co_invest_frequency', e.target.value || undefined)}
-          className="w-full text-xs border border-gray-300 rounded p-1.5"
-        >
-          <option value="">All</option>
-          {options.co_invest_frequencies.map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
-      </div>
-
-      {/* ESG Level */}
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">ESG/Impact Level</label>
-        <select
-          value={filters.esg_level || ''}
-          onChange={(e) => onFilterChange('esg_level', e.target.value || undefined)}
-          className="w-full text-xs border border-gray-300 rounded p-1.5"
-        >
-          <option value="">All</option>
-          {options.esg_levels.map(l => <option key={l} value={l}>{l}</option>)}
-        </select>
-      </div>
+      {/* Dropdowns */}
+      {([
+        { key: 'direct_investment' as const, label: 'Direct Investment', opts: ['Yes', 'No'] },
+        { key: 'co_invest_frequency' as const, label: 'Co-Invest Freq', opts: options.co_invest_frequencies },
+        { key: 'esg_level' as const, label: 'ESG / Impact', opts: options.esg_levels },
+      ]).map(({ key, label, opts }) => (
+        <div key={key}>
+          <Label>{label}</Label>
+          <select
+            title={label}
+            value={(filters as Record<string, unknown>)[key] as string || ''}
+            onChange={(e) => onFilterChange(key, e.target.value || undefined)}
+            className="w-full text-xs rounded-md px-2 py-1.5 filter-input"
+          >
+            <option value="">Any</option>
+            {opts.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+      ))}
     </div>
   );
 }

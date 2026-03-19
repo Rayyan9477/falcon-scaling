@@ -9,43 +9,45 @@ interface Props {
 export default function ResultCard({ result, index }: Props) {
   const [expanded, setExpanded] = useState(false);
 
+  const pct = Math.round(result.relevance_score * 100);
+  const scoreClass = pct >= 40 ? 'score-high' : pct >= 25 ? 'score-mid' : 'score-low';
+
   return (
-    <div
-      className="border border-gray-200 rounded-lg p-3 bg-white hover:border-blue-300 transition-colors cursor-pointer"
+    <button
+      type="button"
       onClick={() => setExpanded(!expanded)}
+      className="w-full text-left rounded-lg px-3 py-2.5 transition-all cursor-pointer result-card"
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-gray-400">#{index + 1}</span>
-            <h4 className="text-sm font-semibold text-gray-900">{result.name}</h4>
-            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-              result.type === 'SFO'
-                ? 'bg-purple-50 text-purple-700'
-                : 'bg-orange-50 text-orange-700'
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-mono result-meta">{index + 1}</span>
+            <span className="text-[13px] font-semibold truncate result-name">{result.name}</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+              result.type === 'SFO' ? 'badge-sfo' : 'badge-mfo'
             }`}>
               {result.type}
             </span>
           </div>
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+          <div className="flex items-center gap-2 mt-0.5 text-[11px] result-meta">
             <span>{result.country}</span>
-            <span>AUM: ${result.aum_b}B</span>
-            <span className="text-gray-300">|</span>
-            <span>Score: {(result.relevance_score * 100).toFixed(1)}%</span>
+            <span>|</span>
+            <span>${result.aum_b}B AUM</span>
+            <span>|</span>
+            <span className={scoreClass}>{pct}% match</span>
           </div>
         </div>
-        <button className="text-gray-400 text-xs">
-          {expanded ? '▲' : '▼'}
-        </button>
+        <span className="text-[10px] mt-1 shrink-0 result-meta">
+          {expanded ? '\u25B2' : '\u25BC'}
+        </span>
       </div>
 
       {expanded && (
-        <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-600 space-y-1">
-          <p><span className="font-medium text-gray-700">Region:</span> {result.region}</p>
-          <p><span className="font-medium text-gray-700">Sectors:</span> {result.sector_focus}</p>
-          <p><span className="font-medium text-gray-700">Summary:</span> {result.summary}</p>
+        <div className="mt-2 pt-2 border-t border-slate-100 text-[11px] space-y-0.5">
+          <p><span className="font-medium result-detail-label">Region:</span> <span className="result-detail-val">{result.region}</span></p>
+          <p><span className="font-medium result-detail-label">Sectors:</span> <span className="result-detail-val">{result.sector_focus}</span></p>
         </div>
       )}
-    </div>
+    </button>
   );
 }

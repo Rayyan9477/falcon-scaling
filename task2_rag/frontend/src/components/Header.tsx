@@ -1,23 +1,19 @@
 export default function Header() {
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="px-5 py-2.5 border-b surface">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">
-            PolarityIQ Family Office Intelligence
-          </h1>
-          <p className="text-sm text-gray-500">
-            RAG-powered natural language query interface
-          </p>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-md flex items-center justify-center brand-icon">
+            <span className="font-bold text-xs">FO</span>
+          </div>
+          <div>
+            <h1 className="text-sm font-semibold brand-title">Family Office Intelligence</h1>
+            <p className="text-[11px] brand-sub">200 offices &middot; 45 fields &middot; 6 regions</p>
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-xs text-gray-400">
-          <span className="px-2 py-1 bg-green-50 text-green-700 rounded-full font-medium">
-            200 Family Offices
-          </span>
-          <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">
-            45 Fields
-          </span>
-        </div>
+        <span className="text-[11px] px-2 py-0.5 rounded font-medium border status-badge">
+          Connected
+        </span>
       </div>
     </header>
   );

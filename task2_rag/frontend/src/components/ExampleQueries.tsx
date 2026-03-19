@@ -1,9 +1,9 @@
 const EXAMPLES = [
-  "Which family offices focus on AI with check sizes above $10M?",
-  "Show me all single-family offices in the Middle East that do direct investments",
-  "Which family offices have the highest co-investment frequency in healthcare?",
-  "Find European MFOs with ESG focus and AUM above $5B",
-  "Compare Walton Enterprises and Cascade Investment strategies",
+  "Family offices in Asia that invest in healthcare",
+  "European SFOs with high co-investment frequency",
+  "Who are the largest FOs by AUM in the Middle East?",
+  "Compare Walton Enterprises and Cascade Investment",
+  "FOs focused on climate tech and ESG impact",
 ];
 
 interface Props {
@@ -13,16 +13,14 @@ interface Props {
 
 export default function ExampleQueries({ onSelect, disabled }: Props) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5 justify-center">
       {EXAMPLES.map((q) => (
         <button
+          type="button"
           key={q}
           onClick={() => onSelect(q)}
           disabled={disabled}
-          className="text-xs px-3 py-1.5 bg-white border border-gray-200 rounded-full
-                     text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700
-                     transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-                     text-left leading-tight"
+          className="text-[11px] px-3 py-1.5 rounded-md transition-colors pill"
         >
           {q}
         </button>

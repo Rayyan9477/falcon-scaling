@@ -162,7 +162,16 @@ class QueryEngine:
             candidate_ids = self._apply_structured_filters(extracted)
             filter_summary = f"Filtered to {len(candidate_ids)} candidates from structured filters."
 
-            if semantic_query:
+            if not candidate_ids:
+                # LLM-extracted filters produced zero results — likely hallucinated filters.
+                # Fall back to pure semantic search instead of returning nothing.
+                import logging
+                logging.getLogger(__name__).warning("Filter extraction returned 0 candidates — falling back to semantic search")
+                filter_summary = "LLM-extracted filters returned 0 results; falling back to semantic search."
+                has_structured_filters = False
+                candidate_ids = []
+                results = self._semantic_search(semantic_query or user_query, top_k=top_k)
+            elif semantic_query:
                 # Hybrid: semantic search within filtered candidates
                 results = self._semantic_search(semantic_query, candidate_ids, top_k)
             else:

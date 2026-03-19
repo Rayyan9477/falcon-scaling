@@ -8,12 +8,11 @@ function App() {
   const { filters, updateFilter, resetFilters, hasActiveFilters } = useFilters()
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col app-shell">
       <Header />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 overflow-y-auto shrink-0">
+        <aside className="w-52 border-r shrink-0 overflow-y-auto app-sidebar">
           <FilterSidebar
             filters={filters}
             onFilterChange={updateFilter}
@@ -22,8 +21,7 @@ function App() {
           />
         </aside>
 
-        {/* Main chat area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden app-main">
           <ChatInterface filters={filters} />
         </main>
       </div>
