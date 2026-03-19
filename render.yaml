@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: fo-intelligence
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: LLM_MODEL
+        value: gpt-5.4-nano
+      - key: LLM_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: "*"

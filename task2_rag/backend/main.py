@@ -38,11 +38,12 @@ async def lifespan(app: FastAPI):
         df = df.reset_index(drop=True)
         logger.info("FAISS index built and saved. %d documents indexed.", len(documents))
 
-    # Initialize LLM client
+    # Initialize LLM client (with automatic fallback to GPT-4o-mini if primary fails)
     llm_client = LLMClient(
         model=settings.llm_model,
         api_key=settings.llm_api_key,
         api_base=settings.llm_api_base or None,
+        fallback_api_key=settings.llm_fallback_api_key or None,
     )
 
     # Create query engine and register globally

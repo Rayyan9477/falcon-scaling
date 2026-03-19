@@ -6,9 +6,10 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # LLM (LiteLLM — model-agnostic)
-    llm_model: str = "gpt-4o-mini"
+    llm_model: str = "gpt-5.4-nano"
     llm_api_key: str = ""
     llm_api_base: str = ""  # Custom API base URL (e.g., http://localhost:1234/v1 for LM Studio)
+    llm_fallback_api_key: str = ""  # OpenAI API key for fallback if primary model is unavailable
 
     # Embeddings
     embedding_model: str = "all-MiniLM-L6-v2"

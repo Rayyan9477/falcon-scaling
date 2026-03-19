@@ -11,19 +11,21 @@ venv/
 dist/
 build/
 
-# Environment
+# Environment (contains API keys — NEVER commit)
 .env
 .env.local
 
-# FAISS index (rebuilt on startup)
-task2_rag/backend/index/*.faiss
-task2_rag/backend/index/*.pkl
-task2_rag/backend/index/*.json
-!task2_rag/backend/index/.gitkeep
+# FAISS index — COMMITTED for fast cold starts on deployment
+# These are pre-computed embeddings, not secrets.
+# Uncomment the lines below if you want to rebuild on every deploy:
+# app/backend/index/*.faiss
+# app/backend/index/*.pkl
+# app/backend/index/*.json
+!app/backend/index/.gitkeep
 
 # Node
 node_modules/
-task2_rag/frontend/dist/
+app/frontend/dist/
 .npm
 
 # IDE
@@ -40,3 +42,6 @@ desktop.ini
 # Misc
 *.log
 *.tmp
+
+# Playwright screenshots
+.playwright-mcp/

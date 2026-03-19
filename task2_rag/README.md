@@ -48,6 +48,12 @@ npm run dev
 
 ### Docker
 ```bash
+# Prerequisites:
+cd backend && cp .env.example .env  # Add your LLM_API_KEY
+cd ..
+
+# Ensure the dataset exists at ../data/family_office_dataset.xlsx
+
 docker-compose up --build
 # Frontend: http://localhost:3000
 # Backend:  http://localhost:8000

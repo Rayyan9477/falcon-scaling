@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: fo-intelligence-api
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: LLM_MODEL
+        value: gpt-4o-mini
+      - key: LLM_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: DATASET_PATH
+        value: /opt/render/project/src/data/family_office_dataset.xlsx
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+    rootDir: task2_rag
