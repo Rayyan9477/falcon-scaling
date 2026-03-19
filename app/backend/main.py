@@ -2,9 +2,12 @@
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from api.deps import set_engine
 from api.v1.router import router as v1_router
@@ -82,7 +85,20 @@ app.add_middleware(
 # Mount API router
 app.include_router(v1_router)
 
+# Serve React frontend static files in production (when built with `npm run build`)
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+if STATIC_DIR.exists():
+    logger.info("Serving frontend static files from %s", STATIC_DIR)
+    app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
 
-@app.get("/")
-def root():
-    return {"message": "PolarityIQ Family Office Intelligence RAG API", "docs": "/docs"}
+    @app.get("/{path:path}")
+    async def serve_frontend(path: str):
+        """Serve React SPA — all non-API routes fall through to index.html."""
+        file_path = STATIC_DIR / path
+        if file_path.is_file():
+            return FileResponse(str(file_path))
+        return FileResponse(str(STATIC_DIR / "index.html"))
+else:
+    @app.get("/")
+    def root():
+        return {"message": "PolarityIQ Family Office Intelligence API", "docs": "/docs"}
