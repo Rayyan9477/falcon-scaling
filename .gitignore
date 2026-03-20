@@ -43,5 +43,8 @@ desktop.ini
 *.log
 *.tmp
 
+# Query history (runtime data)
+app/backend/index/query_history.json
+
 # Playwright screenshots
 .playwright-mcp/

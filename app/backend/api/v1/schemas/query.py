@@ -71,3 +71,13 @@ class StatsResponse(BaseModel):
     region_breakdown: dict
     aum_stats: dict
     confidence_breakdown: dict
+
+
+class HistoryEntry(BaseModel):
+    id: str
+    query: str
+    answer: str
+    sources: list[FamilyOfficeResult] = []
+    query_analysis: QueryAnalysis | None = None
+    total_matches: int = 0
+    timestamp: str

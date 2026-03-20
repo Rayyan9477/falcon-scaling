@@ -31,8 +31,9 @@ from openpyxl.worksheet.datavalidation import DataValidation
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-INPUT_PATH = Path(r"d:\Repo\falcon-scaling\data\family_office_dataset.xlsx")
-OUTPUT_PATH = Path(r"d:\Repo\falcon-scaling\task4_product\co_investment_accelerator.xlsx")
+_ROOT = Path(__file__).resolve().parent.parent
+INPUT_PATH = _ROOT / "data" / "family_office_dataset.xlsx"
+OUTPUT_PATH = _ROOT / "products" / "co_investment_accelerator.xlsx"
 
 # ---------------------------------------------------------------------------
 # Style constants

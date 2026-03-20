@@ -32,7 +32,7 @@ COPY --from=frontend-build /build/dist ./static/
 # Environment defaults (override via Render/Railway dashboard)
 ENV DATASET_PATH=/app/data/family_office_dataset.xlsx
 ENV EMBEDDING_MODEL=all-MiniLM-L6-v2
-ENV LLM_MODEL=gpt-5.4-nano
+ENV LLM_MODEL=gpt-5.1
 ENV CORS_ORIGINS=*
 
 EXPOSE 8000

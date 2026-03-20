@@ -1,13 +1,10 @@
-"""LiteLLM wrapper for model-agnostic LLM calls."""
+"""OpenAI SDK wrapper for LLM calls with fallback and rate control."""
 
 import json
-import os
-import litellm
-
-# Suppress litellm verbose logs
 import logging
-logging.getLogger("LiteLLM").setLevel(logging.WARNING)
-logging.getLogger("litellm").setLevel(logging.WARNING)
+from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
 
 
 FILTER_EXTRACTION_TOOL = {
@@ -76,63 +73,52 @@ FILTER_EXTRACTION_TOOL = {
 
 
 class LLMClient:
-    """Model-agnostic LLM client via LiteLLM with automatic fallback and rate control."""
+    """OpenAI-compatible LLM client with automatic fallback and rate control."""
 
     FALLBACK_MODEL = "gpt-4o-mini"
-    MAX_TOKENS_FILTER = 300       # Filter extraction is structured — keep tight
-    MAX_TOKENS_ANSWER = 1500      # Enough for detailed answers, not runaway generation
+    MAX_TOKENS_FILTER = 300
+    MAX_TOKENS_ANSWER = 1500
     MAX_RETRIES = 2
 
-    def __init__(self, model: str = "gpt-5.4-nano", api_key: str | None = None,
+    def __init__(self, model: str = "gpt-4o", api_key: str | None = None,
                  api_base: str | None = None, fallback_api_key: str | None = None):
         self.model = model
-        self.api_base = api_base or None
         self.fallback_api_key = fallback_api_key
         self._using_fallback = False
 
-        if api_key:
-            self._set_api_key(model, api_key)
+        # Primary client
+        self.client = AsyncOpenAI(
+            api_key=api_key or "sk-placeholder",
+            base_url=api_base or None,
+            max_retries=self.MAX_RETRIES,
+        )
 
-        if self.api_base:
-            os.environ["OPENAI_API_BASE"] = self.api_base
+        # Fallback client (always points to OpenAI directly)
+        self.fallback_client = None
+        if fallback_api_key:
+            self.fallback_client = AsyncOpenAI(
+                api_key=fallback_api_key,
+                max_retries=self.MAX_RETRIES,
+            )
 
-    def _set_api_key(self, model: str, api_key: str):
-        """Route the API key to the correct env var based on model provider."""
-        if "gpt" in model or "o1" in model or "o3" in model or model.startswith("openai/"):
-            os.environ["OPENAI_API_KEY"] = api_key
-        elif "claude" in model:
-            os.environ["ANTHROPIC_API_KEY"] = api_key
-        elif "groq" in model:
-            os.environ["GROQ_API_KEY"] = api_key
-        else:
-            os.environ["OPENAI_API_KEY"] = api_key
-
-    async def _call_with_fallback(self, **kwargs) -> "litellm.ModelResponse":
-        """Try the primary model; if it fails (local model down, etc.), fall back to GPT-4o-mini."""
+    async def _call_with_fallback(self, **kwargs):
+        """Try the primary model; if it fails, fall back."""
         try:
-            return await litellm.acompletion(model=self.model, **kwargs)
+            return await self.client.chat.completions.create(model=self.model, **kwargs)
         except Exception as primary_err:
-            if self.fallback_api_key and self.model != self.FALLBACK_MODEL:
-                logger = logging.getLogger(__name__)
+            if self.fallback_client and self.model != self.FALLBACK_MODEL:
                 logger.warning("Primary model '%s' failed (%s), falling back to %s",
                                self.model, type(primary_err).__name__, self.FALLBACK_MODEL)
-                # Temporarily clear local API base so fallback hits OpenAI directly
-                old_base = os.environ.pop("OPENAI_API_BASE", None)
-                os.environ["OPENAI_API_KEY"] = self.fallback_api_key
-                try:
-                    result = await litellm.acompletion(model=self.FALLBACK_MODEL, **kwargs)
-                    self._using_fallback = True
-                    return result
-                finally:
-                    # Restore original API base
-                    if old_base:
-                        os.environ["OPENAI_API_BASE"] = old_base
+                result = await self.fallback_client.chat.completions.create(
+                    model=self.FALLBACK_MODEL, **kwargs
+                )
+                self._using_fallback = True
+                return result
             raise
 
     async def extract_filters(self, query: str) -> dict:
-        """Use function calling to extract structured filters from a natural language query.
-        Falls back to JSON-prompt extraction for local models that don't support tool calling."""
-        # Try function calling first (works with OpenAI, Anthropic, Groq)
+        """Use function calling to extract structured filters from a natural language query."""
+        # Try function calling first
         try:
             response = await self._call_with_fallback(
                 messages=[
@@ -150,14 +136,13 @@ class LLMClient:
                 tool_choice={"type": "function", "function": {"name": "extract_query_filters"}},
                 temperature=0,
                 max_tokens=self.MAX_TOKENS_FILTER,
-                num_retries=self.MAX_RETRIES,
             )
             tool_call = response.choices[0].message.tool_calls[0]
             return json.loads(tool_call.function.arguments)
         except Exception:
             pass
 
-        # Fallback: prompt-based JSON extraction (for local models like Qwen, Llama, etc.)
+        # Fallback: prompt-based JSON extraction (for local models without tool support)
         try:
             response = await self._call_with_fallback(
                 messages=[
@@ -181,9 +166,9 @@ class LLMClient:
                     {"role": "user", "content": query}
                 ],
                 temperature=0,
+                max_tokens=self.MAX_TOKENS_FILTER,
             )
             text = response.choices[0].message.content.strip()
-            # Extract JSON from response (handle markdown code blocks)
             if "```" in text:
                 text = text.split("```")[1]
                 if text.startswith("json"):
@@ -191,31 +176,74 @@ class LLMClient:
                 text = text.strip()
             return json.loads(text)
         except Exception:
-            # Final fallback: treat entire query as semantic search
             return {"semantic_query": query}
 
-    async def generate_answer(self, query: str, context: str, filter_summary: str = "") -> str:
-        """Generate a grounded answer from retrieved context."""
+    def _build_answer_prompt(self, query: str, context: str, filter_summary: str = "") -> list[dict]:
+        """Build the message list for answer generation."""
         system_prompt = (
             "You are a family office intelligence analyst. Answer the user's query using ONLY the data provided below. "
-            "Be specific — cite family office names, numbers, and details from the data. "
+            "Be specific -- cite family office names, numbers, and details from the data. "
             "If the data doesn't contain enough information to fully answer, say so honestly. "
             "Format your response clearly with numbered results when listing family offices.\n\n"
             f"RETRIEVED DATA:\n{context}"
         )
         if filter_summary:
             system_prompt += f"\n\nFILTERS APPLIED:\n{filter_summary}"
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query},
+        ]
 
+    async def generate_answer(self, query: str, context: str, filter_summary: str = "") -> str:
+        """Generate a grounded answer from retrieved context."""
+        messages = self._build_answer_prompt(query, context, filter_summary)
         try:
             response = await self._call_with_fallback(
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": query}
-                ],
+                messages=messages,
                 temperature=0.1,
                 max_tokens=self.MAX_TOKENS_ANSWER,
-                num_retries=self.MAX_RETRIES,
             )
             return response.choices[0].message.content
         except Exception as e:
-            return f"Unable to generate a synthesized answer due to an LLM error ({type(e).__name__}). However, the retrieved family office records above contain the relevant data for your query."
+            return (
+                f"Unable to generate a synthesized answer due to an LLM error ({type(e).__name__}). "
+                "However, the retrieved family office records above contain the relevant data for your query."
+            )
+
+    async def generate_answer_stream(self, query: str, context: str, filter_summary: str = ""):
+        """Stream a grounded answer token-by-token. Yields string chunks."""
+        messages = self._build_answer_prompt(query, context, filter_summary)
+        client = self.client
+        model = self.model
+
+        try:
+            stream = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.1,
+                max_tokens=self.MAX_TOKENS_ANSWER,
+                stream=True,
+            )
+            async for chunk in stream:
+                delta = chunk.choices[0].delta
+                if delta and delta.content:
+                    yield delta.content
+        except Exception:
+            # Try fallback model for streaming
+            if self.fallback_client and self.model != self.FALLBACK_MODEL:
+                try:
+                    stream = await self.fallback_client.chat.completions.create(
+                        model=self.FALLBACK_MODEL,
+                        messages=messages,
+                        temperature=0.1,
+                        max_tokens=self.MAX_TOKENS_ANSWER,
+                        stream=True,
+                    )
+                    async for chunk in stream:
+                        delta = chunk.choices[0].delta
+                        if delta and delta.content:
+                            yield delta.content
+                except Exception:
+                    yield "Unable to generate a streaming answer due to an LLM error."
+            else:
+                yield "Unable to generate a streaming answer due to an LLM error."

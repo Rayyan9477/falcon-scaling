@@ -1,10 +1,9 @@
-"""Data ingestion: XLSX → rich-text documents → FAISS index."""
+"""Data ingestion: XLSX -> rich-text documents -> numpy vector index."""
 
 import json
 import pickle
 from pathlib import Path
 
-import faiss
 import numpy as np
 import pandas as pd
 
@@ -107,8 +106,8 @@ def row_to_metadata(row: pd.Series) -> dict:
 
 def build_index(dataset_path: str, index_dir: str, embedding_model: EmbeddingModel) -> tuple:
     """
-    Build FAISS index from the dataset.
-    Returns (faiss_index, documents, metadata_list, dataframe).
+    Build numpy vector index from the dataset.
+    Returns (embeddings_matrix, documents, metadata_list, dataframe).
     """
     df = load_dataset(dataset_path)
 
@@ -118,21 +117,19 @@ def build_index(dataset_path: str, index_dir: str, embedding_model: EmbeddingMod
         documents.append(row_to_document(row))
         metadata_list.append(row_to_metadata(row))
 
-    # Embed all documents
+    # Embed all documents via OpenAI API
     embeddings = embedding_model.encode(documents)
 
-    # Build FAISS index (flat L2 for small dataset — exact search)
-    dimension = embeddings.shape[1]
-    index = faiss.IndexFlatIP(dimension)  # Inner product (cosine sim after normalization)
-
-    # Normalize embeddings for cosine similarity
-    faiss.normalize_L2(embeddings)
-    index.add(embeddings)
+    # Normalize for cosine similarity
+    norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+    norms[norms == 0] = 1
+    embeddings = embeddings / norms
 
     # Save to disk
     index_path = Path(index_dir)
     index_path.mkdir(parents=True, exist_ok=True)
-    faiss.write_index(index, str(index_path / "fo_index.faiss"))
+
+    np.save(str(index_path / "embeddings.npy"), embeddings)
 
     with open(index_path / "documents.pkl", "wb") as f:
         pickle.dump(documents, f)
@@ -140,21 +137,21 @@ def build_index(dataset_path: str, index_dir: str, embedding_model: EmbeddingMod
     with open(index_path / "metadata.json", "w", encoding="utf-8") as f:
         json.dump(metadata_list, f, ensure_ascii=False, indent=2)
 
-    return index, documents, metadata_list, df
+    return embeddings, documents, metadata_list, df
 
 
 def load_index(index_dir: str) -> tuple | None:
-    """Load existing FAISS index from disk. Returns None if not found."""
+    """Load existing vector index from disk. Returns None if not found."""
     index_path = Path(index_dir)
 
-    faiss_file = index_path / "fo_index.faiss"
+    emb_file = index_path / "embeddings.npy"
     docs_file = index_path / "documents.pkl"
     meta_file = index_path / "metadata.json"
 
-    if not all(f.exists() for f in [faiss_file, docs_file, meta_file]):
+    if not all(f.exists() for f in [emb_file, docs_file, meta_file]):
         return None
 
-    index = faiss.read_index(str(faiss_file))
+    embeddings = np.load(str(emb_file))
 
     with open(docs_file, "rb") as f:
         documents = pickle.load(f)
@@ -162,4 +159,4 @@ def load_index(index_dir: str) -> tuple | None:
     with open(meta_file, "r", encoding="utf-8") as f:
         metadata_list = json.load(f)
 
-    return index, documents, metadata_list
+    return embeddings, documents, metadata_list

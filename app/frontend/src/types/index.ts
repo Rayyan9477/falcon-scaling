@@ -69,3 +69,13 @@ export interface ChatMessage {
   queryAnalysis?: QueryAnalysis;
   timestamp: Date;
 }
+
+export interface HistoryEntry {
+  id: string;
+  query: string;
+  answer: string;
+  sources: FamilyOfficeResult[];
+  query_analysis: QueryAnalysis | null;
+  total_matches: number;
+  timestamp: string;
+}

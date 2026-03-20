@@ -1,8 +1,7 @@
 """
 main.py -- project launcher for the Family Office Intelligence RAG app.
 
-I built this because juggling two terminal tabs got old fast. It boots
-the FastAPI backend (uvicorn + FAISS + LiteLLM) and the React/Vite
+Boots the FastAPI backend (uvicorn + FAISS + LiteLLM) and the React/Vite
 frontend in one shot, wires them together, and tears everything down
 cleanly on Ctrl-C.
 
@@ -25,17 +24,20 @@ import signal
 import subprocess
 import sys
 import time
+import urllib.request
 
 # ── paths ────────────────────────────────────────────────────────────
 ROOT = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(ROOT, "app", "backend")
 FRONTEND_DIR = os.path.join(ROOT, "app", "frontend")
 DATASET_PATH = os.path.join(ROOT, "data", "family_office_dataset.xlsx")
+REQUIREMENTS_PATH = os.path.join(BACKEND_DIR, "requirements.txt")
 
 IS_WIN = platform.system() == "Windows"
 
 # keeps track of child procs so we can clean up later
 _children: list[subprocess.Popen] = []
+_shutting_down = False
 
 
 # ── helpers ──────────────────────────────────────────────────────────
@@ -45,7 +47,68 @@ def _npm(name: str) -> str:
     return f"{name}.cmd" if IS_WIN else name
 
 
-def _preflight():
+def _print(msg: str, prefix: str = "  "):
+    """Print a formatted message."""
+    print(f"{prefix}{msg}")
+
+
+def _check_python_deps():
+    """Verify critical Python packages are installed (using pip list, not import)."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "list", "--format=columns"],
+        capture_output=True, text=True,
+    )
+    installed = set()
+    for line in result.stdout.splitlines():
+        parts = line.split()
+        if parts:
+            installed.add(parts[0].lower())
+
+    required = ["fastapi", "uvicorn", "pydantic-settings", "openai", "pandas", "openpyxl", "python-docx"]
+    missing = [pkg for pkg in required if pkg.lower() not in installed]
+
+    if missing:
+        _print(f"Missing Python packages: {', '.join(missing)}")
+        _print(f"Installing from {REQUIREMENTS_PATH} ...")
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-r", REQUIREMENTS_PATH],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            _print("ERROR: pip install failed:")
+            _print(result.stderr[-500:] if result.stderr else "unknown error")
+            sys.exit(1)
+        _print("Python dependencies installed.")
+    else:
+        _print("Python dependencies: OK")
+
+
+def _check_node():
+    """Verify Node.js and npm are available."""
+    try:
+        result = subprocess.run(
+            ["node", "--version"],
+            capture_output=True, text=True, shell=IS_WIN,
+        )
+        version = result.stdout.strip()
+        if not version:
+            _print("Node.js: detected (version unknown)")
+            return True
+
+        _print(f"Node.js: {version}")
+        try:
+            parts = version.lstrip("v").split(".")
+            major = int(parts[0]) if parts[0] else 0
+            _print(f"Node.js {version} OK")
+        except (ValueError, IndexError):
+            pass
+        return True
+    except (FileNotFoundError, OSError):
+        _print("ERROR: Node.js not found. Install Node.js 18+ for the frontend.")
+        return False
+
+
+def _preflight(want_be: bool, want_fe: bool):
     """
     Sanity-check the things people forget before they hit 'python main.py'
     and then wonder why nothing works.
@@ -57,24 +120,48 @@ def _preflight():
         if os.path.exists(example):
             import shutil
             shutil.copy2(example, env_file)
-            print("  copied .env.example -> .env  (edit it to add your API key)")
+            _print("Created .env from .env.example  (edit it to add your API key)")
         else:
-            print("  ERROR: no .env file in app/backend/")
-            print("         create one -- see .env.example for the format")
+            _print("ERROR: no .env file in app/backend/")
+            _print("       create one -- see .env.example for the format")
             sys.exit(1)
+    else:
+        _print(".env file: OK")
 
     # 2) dataset
     if not os.path.exists(DATASET_PATH):
-        print(f"  ERROR: dataset missing at {DATASET_PATH}")
+        _print(f"ERROR: dataset missing at {DATASET_PATH}")
         sys.exit(1)
+    _print("Dataset: OK")
 
-    # 3) node_modules -- install once, never think about it again
-    if not os.path.exists(os.path.join(FRONTEND_DIR, "node_modules")):
-        print("  installing frontend deps (first run only)...")
-        subprocess.run(
-            [_npm("npm"), "install"],
-            cwd=FRONTEND_DIR, check=True, shell=IS_WIN,
-        )
+    # 3) Python dependencies (if running backend)
+    if want_be:
+        _check_python_deps()
+
+    # 4) Node + frontend deps (if running frontend)
+    node_ok = True
+    if want_fe:
+        node_ok = _check_node()
+        if node_ok:
+            node_modules = os.path.join(FRONTEND_DIR, "node_modules")
+            if not os.path.exists(node_modules):
+                _print("Installing frontend dependencies (first run only)...")
+                result = subprocess.run(
+                    [_npm("npm"), "install", "--force"],
+                    cwd=FRONTEND_DIR, shell=IS_WIN,
+                    capture_output=True, text=True,
+                )
+                if result.returncode != 0:
+                    _print("WARNING: npm install failed. Trying with --legacy-peer-deps...")
+                    subprocess.run(
+                        [_npm("npm"), "install", "--legacy-peer-deps"],
+                        cwd=FRONTEND_DIR, shell=IS_WIN, check=True,
+                    )
+                _print("Frontend dependencies installed.")
+            else:
+                _print("Frontend dependencies: OK")
+
+    return node_ok
 
 
 # ── service launchers ────────────────────────────────────────────────
@@ -93,7 +180,9 @@ def _boot_backend(port: int) -> subprocess.Popen:
 
 def _boot_frontend(backend_port: int) -> subprocess.Popen:
     env = os.environ.copy()
-    env["VITE_API_URL"] = f"http://localhost:{backend_port}"
+    # API_PROXY_TARGET (no VITE_ prefix) stays server-side in vite.config.ts.
+    # The frontend browser code uses relative /api paths which Vite proxies.
+    env["API_PROXY_TARGET"] = f"http://localhost:{backend_port}"
 
     proc = subprocess.Popen(
         [_npm("npx"), "vite", "--port", "5173", "--host"],
@@ -102,19 +191,50 @@ def _boot_frontend(backend_port: int) -> subprocess.Popen:
     return proc
 
 
+def _wait_for_backend(port: int, timeout: int = 60):
+    """Poll the backend health endpoint until it responds or timeout."""
+    url = f"http://localhost:{port}/api/v1/health"
+    _print(f"Waiting for backend to be ready...")
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            with urllib.request.urlopen(url, timeout=2) as resp:
+                if resp.status == 200:
+                    _print("Backend is ready!")
+                    return True
+        except Exception:
+            pass
+        time.sleep(1)
+    _print(f"WARNING: Backend health check timed out after {timeout}s")
+    _print("         It may still be loading the embedding model...")
+    return False
+
+
 # ── shutdown ─────────────────────────────────────────────────────────
 
 def _teardown(signum=None, frame=None):
-    print("\n  shutting down...")
+    global _shutting_down
+    if _shutting_down:
+        return
+    _shutting_down = True
+
+    print()
+    _print("Shutting down...")
     for p in _children:
         if p.poll() is None:
-            p.terminate()
+            try:
+                p.terminate()
+            except OSError:
+                pass
     for p in _children:
         try:
             p.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            p.kill()
-    print("  done.")
+            try:
+                p.kill()
+            except OSError:
+                pass
+    _print("Done. Goodbye!")
     sys.exit(0)
 
 
@@ -140,26 +260,53 @@ def main():
 
     # ── banner ───────────────────────────────────────────────────────
     print()
-    print("  Family Office Intelligence - RAG Pipeline")
-    print("  -----------------------------------------")
+    print("  =================================================")
+    print("    PolarityIQ Family Office Intelligence")
+    print("    RAG Pipeline -- powered by GPT-5.1 + OpenAI Embeddings")
+    print("  =================================================")
     print()
 
-    _preflight()
+    # ── preflight checks ─────────────────────────────────────────────
+    _print("Running preflight checks...")
+    print()
+    node_ok = _preflight(want_be, want_fe)
+
+    # If Node is too old, fall back to backend-only
+    if want_fe and not node_ok:
+        _print("Falling back to backend-only mode (no frontend).")
+        want_fe = False
+        if not want_be:
+            _print("ERROR: Cannot run — Node.js not available and backend not requested.")
+            sys.exit(1)
+
+    print()
 
     # ── start services ───────────────────────────────────────────────
     if want_be:
-        print(f"  starting backend   -> http://localhost:{args.port}")
-        print(f"                        http://localhost:{args.port}/docs  (Swagger)")
+        _print(f"Starting backend   -> http://localhost:{args.port}")
+        _print(f"  API docs         -> http://localhost:{args.port}/docs")
         _children.append(_boot_backend(args.port))
+
         if want_fe:
-            time.sleep(3)       # let uvicorn grab the port first
+            # Wait for backend to be actually ready before starting frontend
+            _wait_for_backend(args.port, timeout=90)
 
     if want_fe:
-        print(f"  starting frontend  -> http://localhost:5173")
+        _print(f"Starting frontend  -> http://localhost:5173")
+        _print(f"  Proxying /api    -> http://localhost:{args.port}")
         _children.append(_boot_frontend(args.port))
 
     print()
-    print("  Ctrl+C to stop everything")
+    _print("=" * 47)
+    if want_be and want_fe:
+        _print(f"Open http://localhost:5173 in your browser")
+    elif want_be:
+        _print(f"API running at http://localhost:{args.port}")
+        _print(f"Swagger docs at http://localhost:{args.port}/docs")
+    else:
+        _print(f"Frontend running at http://localhost:5173")
+    _print("Press Ctrl+C to stop")
+    _print("=" * 47)
     print()
 
     # ── block until something dies ───────────────────────────────────
@@ -169,7 +316,7 @@ def main():
                 code = p.poll()
                 if code is not None:
                     label = "backend" if i == 0 and want_be else "frontend"
-                    print(f"\n  {label} exited (code {code}) -- stopping the rest")
+                    _print(f"{label} exited (code {code}) -- stopping the rest")
                     _teardown()
             time.sleep(1)
     except KeyboardInterrupt:
