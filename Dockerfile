@@ -21,11 +21,8 @@ WORKDIR /app
 COPY app/backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code
+# Copy backend code (includes data/ subdirectory with dataset)
 COPY app/backend/ .
-
-# Copy dataset
-COPY data/ /app/data/
 
 # Create index directory
 RUN mkdir -p /app/index
@@ -34,6 +31,7 @@ RUN mkdir -p /app/index
 COPY --from=frontend-build /build/dist ./static/
 
 # Environment defaults (override via Render/Railway dashboard env vars)
+# Dataset is inside backend/data/ (copied with backend code above)
 ENV DATASET_PATH=/app/data/family_office_dataset.xlsx
 ENV INDEX_DIR=/app/index
 ENV EMBEDDING_MODEL=text-embedding-3-small

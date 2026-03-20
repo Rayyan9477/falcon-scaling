@@ -1,6 +1,5 @@
 # Prerequisites:
 # 1. Copy backend/.env.example to backend/.env and add your LLM API key
-# 2. Ensure ../data/family_office_dataset.xlsx exists
 
 services:
   backend:
@@ -11,8 +10,6 @@ services:
       - "8000:8000"
     env_file:
       - backend/.env
-    volumes:
-      - ../data:/app/data
     environment:
       - DATASET_PATH=/app/data/family_office_dataset.xlsx
 

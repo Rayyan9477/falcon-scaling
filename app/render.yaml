@@ -1,18 +1,15 @@
+# DEPRECATED: Use the root render.yaml instead.
+# This file exists only for backward compatibility.
+# Deploy from repo root with: render.yaml (in project root)
 services:
   - type: web
     name: fo-intelligence-api
-    runtime: python
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    runtime: docker
+    dockerfilePath: ../Dockerfile
     envVars:
       - key: LLM_MODEL
-        value: gpt-4o-mini
+        value: gpt-4o
       - key: LLM_API_KEY
-        sync: false  # Set manually in Render dashboard
-      - key: DATASET_PATH
-        value: /opt/render/project/src/data/family_office_dataset.xlsx
+        sync: false
       - key: CORS_ORIGINS
         value: "*"
-      - key: PYTHON_VERSION
-        value: "3.11.0"
-    rootDir: task2_rag

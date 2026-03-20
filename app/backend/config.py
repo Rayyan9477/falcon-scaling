@@ -14,10 +14,10 @@ class Settings(BaseSettings):
     # Embeddings (OpenAI)
     embedding_model: str = "text-embedding-3-small"
 
-    # Dataset
-    dataset_path: str = str(Path(__file__).resolve().parent.parent.parent / "data" / "family_office_dataset.xlsx")
+    # Dataset (look in backend/data/ first, fall back to repo root data/)
+    dataset_path: str = str(Path(__file__).resolve().parent / "data" / "family_office_dataset.xlsx")
 
-    # FAISS index
+    # Vector index (numpy embeddings cache)
     index_dir: str = str(Path(__file__).resolve().parent / "index")
 
     # Server

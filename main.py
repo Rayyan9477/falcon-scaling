@@ -30,7 +30,9 @@ import urllib.request
 ROOT = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(ROOT, "app", "backend")
 FRONTEND_DIR = os.path.join(ROOT, "app", "frontend")
+# Dataset can be in repo root data/ or in app/backend/data/
 DATASET_PATH = os.path.join(ROOT, "data", "family_office_dataset.xlsx")
+DATASET_PATH_ALT = os.path.join(BACKEND_DIR, "data", "family_office_dataset.xlsx")
 REQUIREMENTS_PATH = os.path.join(BACKEND_DIR, "requirements.txt")
 
 IS_WIN = platform.system() == "Windows"
@@ -128,9 +130,11 @@ def _preflight(want_be: bool, want_fe: bool):
     else:
         _print(".env file: OK")
 
-    # 2) dataset
-    if not os.path.exists(DATASET_PATH):
-        _print(f"ERROR: dataset missing at {DATASET_PATH}")
+    # 2) dataset (check both locations)
+    if not os.path.exists(DATASET_PATH) and not os.path.exists(DATASET_PATH_ALT):
+        _print(f"ERROR: dataset missing")
+        _print(f"  checked: {DATASET_PATH}")
+        _print(f"  checked: {DATASET_PATH_ALT}")
         sys.exit(1)
     _print("Dataset: OK")
 

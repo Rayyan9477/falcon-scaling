@@ -13,5 +13,7 @@ services:
         value: "*"
       - key: DATASET_PATH
         value: /app/data/family_office_dataset.xlsx
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
       - key: INDEX_DIR
         value: /app/index
