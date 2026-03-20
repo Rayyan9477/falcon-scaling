@@ -4,8 +4,12 @@
 # -- Stage 1: Build the React frontend --
 FROM node:20-slim AS frontend-build
 WORKDIR /build
+
+# Copy package files and install deps
 COPY app/frontend/package.json app/frontend/package-lock.json* app/frontend/.npmrc ./
 RUN npm install --legacy-peer-deps --no-audit
+
+# Copy all frontend source and build
 COPY app/frontend/ .
 RUN npm run build
 
@@ -13,7 +17,7 @@ RUN npm run build
 FROM python:3.11-slim
 WORKDIR /app
 
-# Install Python dependencies
+# Install Python dependencies first (cached layer)
 COPY app/backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -23,7 +27,10 @@ COPY app/backend/ .
 # Copy dataset
 COPY data/ /app/data/
 
-# Copy built frontend static files
+# Create index directory
+RUN mkdir -p /app/index
+
+# Copy built frontend static files into backend's static dir
 COPY --from=frontend-build /build/dist ./static/
 
 # Environment defaults (override via Render/Railway dashboard env vars)

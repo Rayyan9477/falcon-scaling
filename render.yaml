@@ -3,10 +3,15 @@ services:
     name: fo-intelligence
     runtime: docker
     dockerfilePath: ./Dockerfile
+    # Root Directory must be empty (repo root) so Docker can access data/ and app/
     envVars:
       - key: LLM_MODEL
-        value: gpt-5.4-nano
+        value: gpt-4o
       - key: LLM_API_KEY
         sync: false
       - key: CORS_ORIGINS
         value: "*"
+      - key: DATASET_PATH
+        value: /app/data/family_office_dataset.xlsx
+      - key: INDEX_DIR
+        value: /app/index

@@ -1,0 +1,17 @@
+node_modules
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.env
+.env.local
+app/frontend/node_modules
+app/frontend/dist
+app/backend/index/*.npy
+app/backend/index/*.pkl
+app/backend/index/*.json
+*.log
+.DS_Store
+Thumbs.db
+~$*
