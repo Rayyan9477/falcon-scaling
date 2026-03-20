@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # LLM (OpenAI SDK — supports any OpenAI-compatible endpoint)
-    llm_model: str = "gpt-4o"
+    llm_model: str = "gpt-4.1"
     llm_api_key: str = ""
     llm_api_base: str = ""  # Custom API base URL (e.g., http://localhost:1234/v1 for LM Studio)
     llm_fallback_api_key: str = ""  # Separate OpenAI key for fallback if primary model is unavailable

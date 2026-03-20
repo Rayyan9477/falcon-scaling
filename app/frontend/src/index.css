@@ -9,72 +9,93 @@ html, body {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f5f6f8;
+  background: #f8fafc;
   color: #1e293b;
 }
 
 #root { min-height: 100vh; }
 
 /* ── layout shells ──────────────────────────────── */
-.shell        { background: #f5f6f8; }
+.shell        { background: #f1f5f9; }
 .surface      { background: #ffffff; border-color: #e2e8f0; }
-.surface-alt  { background: #f5f6f8; }
-.footer-bar   { background: #ffffff; border-color: #f1f5f9; }
+.surface-alt  { background: #f8fafc; }
+.footer-bar   { background: #ffffff; border-color: #e2e8f0; }
 
 /* ── header ─────────────────────────────────────── */
-.brand-icon   { background: #1e40af; color: #ffffff; }
+.brand-icon   { background: #1d4ed8; color: #ffffff; }
 .brand-title  { color: #0f172a; }
-.brand-sub    { color: #94a3b8; }
+.brand-sub    { color: #475569; }
 .status-badge { color: #059669; background: #ecfdf5; border-color: #a7f3d0; }
 
 /* ── filter sidebar ─────────────────────────────── */
-.filter-label { color: #64748b; }
-.filter-chip  { background: #ffffff; color: #475569; border-color: #e2e8f0; }
-.filter-chip:hover { border-color: #94a3b8; }
-.filter-chip-on { background: #1e40af; color: #ffffff; border-color: #1e40af; }
-.filter-input { background: #ffffff; color: #1e293b; border-color: #e2e8f0; }
+.filter-label   { color: #334155; font-weight: 600; }
+.filter-chip    { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+.filter-chip:hover { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+.filter-chip-on { background: #1d4ed8; color: #ffffff; border-color: #1d4ed8; }
+.filter-input   { background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; }
 .filter-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 2px #dbeafe; }
-.filter-hint  { color: #94a3b8; }
-.filter-reset { color: #2563eb; }
+.filter-hint    { color: #64748b; }
+.filter-reset   { color: #2563eb; font-weight: 500; }
 .filter-reset:hover { text-decoration: underline; }
-.filter-heading { color: #334155; }
+.filter-heading { color: #0f172a; font-weight: 700; }
 
 /* ── chat ───────────────────────────────────────── */
-.msg-user     { background: #1e40af; color: #ffffff; }
-.msg-bot      { background: #ffffff; color: #334155; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-.msg-meta     { color: #94a3b8; }
-.input-box    { background: #ffffff; color: #1e293b; border-color: #e2e8f0; }
-.input-box::placeholder { color: #cbd5e1; }
-.input-box:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 2px #dbeafe; }
-.btn-send     { background: #1e40af; color: #ffffff; }
-.btn-send:hover { background: #1e3a8a; }
+.msg-user {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+.msg-bot {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+}
+.msg-meta { color: #475569; }
+.input-box { background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; }
+.input-box::placeholder { color: #94a3b8; }
+.input-box:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.btn-send { background: #1d4ed8; color: #ffffff; }
+.btn-send:hover { background: #1e40af; }
 .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
 
+/* ── prose for LLM responses ───────────────────── */
+.prose-sm { color: #1e293b; line-height: 1.75; }
+.prose-sm strong { color: #0f172a; font-weight: 600; }
+.prose-sm p { margin-bottom: 0.5rem; }
+
 /* ── example query pills ────────────────────────── */
-.pill         { background: #ffffff; color: #64748b; border: 1px solid #e2e8f0; }
-.pill:hover   { color: #1e40af; border-color: #93c5fd; background: #eff6ff; }
+.pill         { background: #ffffff; color: #475569; border: 1px solid #e2e8f0; }
+.pill:hover   { color: #1d4ed8; border-color: #93c5fd; background: #eff6ff; }
 .pill:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ── result cards ───────────────────────────────── */
-.result-card  { background: #fafbfc; border: 1px solid #f1f5f9; }
-.result-card:hover { background: #ffffff; border-color: #cbd5e1; }
-.result-name  { color: #0f172a; }
-.result-meta  { color: #94a3b8; }
-.result-detail-label { color: #334155; }
-.result-detail-val   { color: #64748b; }
-.badge-sfo    { background: #eef2ff; color: #4338ca; }
-.badge-mfo    { background: #fef3c7; color: #b45309; }
-.score-high   { color: #059669; }
-.score-mid    { color: #d97706; }
-.score-low    { color: #94a3b8; }
+.result-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.15s ease;
+}
+.result-card:hover {
+  background: #ffffff;
+  border-color: #93c5fd;
+  box-shadow: 0 1px 3px rgba(59,130,246,0.1);
+}
+.result-name       { color: #0f172a; }
+.result-meta       { color: #475569; }
+.result-detail-label { color: #1e293b; font-weight: 500; }
+.result-detail-val   { color: #475569; }
+.badge-sfo { background: #eef2ff; color: #4338ca; font-weight: 600; }
+.badge-mfo { background: #fef3c7; color: #b45309; font-weight: 600; }
+.score-high { color: #059669; font-weight: 600; }
+.score-mid  { color: #d97706; font-weight: 500; }
+.score-low  { color: #6b7280; }
 
 /* ── empty / loading / error states ─────────────── */
-.empty-title  { color: #334155; }
-.empty-sub    { color: #94a3b8; }
+.empty-title  { color: #1e293b; }
+.empty-sub    { color: #64748b; }
 .loading-dot  { background: #3b82f6; }
-.loading-text { color: #94a3b8; }
+.loading-text { color: #64748b; }
 .error-text   { color: #dc2626; }
-.stat-text    { color: #94a3b8; }
+.stat-text    { color: #475569; }
 
 /* ── scrollbar ──────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; }
@@ -83,4 +104,7 @@ html, body {
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* ── range input ────────────────────────────────── */
-input[type="range"] { accent-color: #1e40af; }
+input[type="range"] { accent-color: #1d4ed8; }
+
+/* ── select multi ──────────────────────────────── */
+select[multiple] option:checked { background: #1d4ed8; color: #ffffff; }

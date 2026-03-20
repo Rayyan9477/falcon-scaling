@@ -35,7 +35,7 @@ COPY --from=frontend-build /build/dist ./static/
 ENV DATASET_PATH=/app/data/family_office_dataset.xlsx
 ENV INDEX_DIR=/app/index
 ENV EMBEDDING_MODEL=text-embedding-3-small
-ENV LLM_MODEL=gpt-4o
+ENV LLM_MODEL=gpt-4.1
 ENV CORS_ORIGINS=*
 
 EXPOSE 8000

@@ -6,6 +6,66 @@ import ResultCard from './ResultCard';
 import ExampleQueries from './ExampleQueries';
 import QueryHistory from './QueryHistory';
 
+/** Markdown → HTML for LLM responses */
+function renderMarkdown(text: string): string {
+  // Escape HTML entities first
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Bold: **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="text-slate-900 font-semibold">$1</strong>');
+
+  // Process line by line
+  const lines = html.split('\n');
+  const processed: string[] = [];
+  let inList = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Numbered list: "1. content" or "1) content"
+    const numMatch = trimmed.match(/^(\d+)[.)]\s+(.+)/);
+    if (numMatch) {
+      if (!inList) { processed.push('<div class="mt-3 space-y-2">'); inList = true; }
+      processed.push(
+        `<div class="flex gap-2 items-start pl-1">` +
+        `<span class="text-blue-600 font-bold text-xs mt-0.5 shrink-0">${numMatch[1]}.</span>` +
+        `<div class="flex-1">${numMatch[2]}</div>` +
+        `</div>`
+      );
+      continue;
+    }
+
+    // Bullet list: "- content" or "• content"
+    const bulletMatch = trimmed.match(/^[-•]\s+(.+)/);
+    if (bulletMatch) {
+      processed.push(
+        `<div class="flex gap-2 items-start pl-5">` +
+        `<span class="text-blue-400 mt-0.5 shrink-0">&#8226;</span>` +
+        `<div class="flex-1 text-slate-600">${bulletMatch[1]}</div>` +
+        `</div>`
+      );
+      continue;
+    }
+
+    // Empty line closes list and adds spacing
+    if (!trimmed) {
+      if (inList) { processed.push('</div>'); inList = false; }
+      processed.push('<div class="h-2"></div>');
+      continue;
+    }
+
+    // Regular paragraph
+    if (inList) { processed.push('</div>'); inList = false; }
+    processed.push(`<p class="mb-2">${trimmed}</p>`);
+  }
+  if (inList) processed.push('</div>');
+
+  return processed.join('\n');
+}
+
 interface Props {
   filters: FilterParams;
 }
@@ -138,8 +198,15 @@ export default function ChatInterface({ filters }: Props) {
                 ? 'rounded-2xl rounded-br-sm px-4 py-2.5 msg-user'
                 : 'rounded-2xl rounded-bl-sm px-4 py-3 msg-bot'
             }`}>
-              <div className="text-[13px] leading-relaxed whitespace-pre-wrap">
-                {msg.content}
+              <div className="text-[13px] leading-relaxed">
+                {msg.role === 'user' ? (
+                  <span>{msg.content}</span>
+                ) : (
+                  <div
+                    className="prose-sm"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                  />
+                )}
                 {isStreaming && msg.role === 'assistant' && msg === messages[messages.length - 1] && msg.content && (
                   <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse loading-dot" />
                 )}

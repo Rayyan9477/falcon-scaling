@@ -6,7 +6,7 @@ services:
     # Root Directory must be empty (repo root) so Docker can access data/ and app/
     envVars:
       - key: LLM_MODEL
-        value: gpt-4o
+        value: gpt-4.1
       - key: LLM_API_KEY
         sync: false
       - key: CORS_ORIGINS

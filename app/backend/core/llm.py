@@ -75,7 +75,7 @@ FILTER_EXTRACTION_TOOL = {
 class LLMClient:
     """OpenAI-compatible LLM client with automatic fallback and rate control."""
 
-    FALLBACK_MODEL = "gpt-4o-mini"
+    FALLBACK_MODEL = "gpt-4.1-mini"
     MAX_TOKENS_FILTER = 300
     MAX_TOKENS_ANSWER = 1500
     MAX_RETRIES = 2
@@ -181,10 +181,22 @@ class LLMClient:
     def _build_answer_prompt(self, query: str, context: str, filter_summary: str = "") -> list[dict]:
         """Build the message list for answer generation."""
         system_prompt = (
-            "You are a family office intelligence analyst. Answer the user's query using ONLY the data provided below. "
-            "Be specific -- cite family office names, numbers, and details from the data. "
-            "If the data doesn't contain enough information to fully answer, say so honestly. "
-            "Format your response clearly with numbered results when listing family offices.\n\n"
+            "You are a family office intelligence analyst. Answer the user's query using ONLY the data provided below.\n\n"
+            "FORMATTING RULES (follow strictly):\n"
+            "- Start with a brief 1-2 sentence summary answering the question.\n"
+            "- When listing family offices, use numbered items with each on its OWN LINE.\n"
+            "- For each family office entry, use this exact format:\n"
+            "  1. **Name** (Type)\n"
+            "     - Headquarters: City, Country\n"
+            "     - Sector Focus: sectors here\n"
+            "     - AUM: $XB\n"
+            "     - Key Detail: relevant info for the query\n"
+            "\n"
+            "- Use blank lines between numbered items for readability.\n"
+            "- Bold (**text**) family office names and important figures.\n"
+            "- End with a brief concluding insight if relevant.\n"
+            "- Be specific -- cite names, numbers, and details from the data.\n"
+            "- If the data doesn't fully answer the question, say so honestly.\n\n"
             f"RETRIEVED DATA:\n{context}"
         )
         if filter_summary:
